@@ -21,25 +21,17 @@ export default async function Landing() {
     : { href: "/login", label: "Prijava" };
 
   return (
-    <div className="min-h-screen selection:bg-amber-500 selection:text-zinc-950">
+    <div className="min-h-screen overflow-x-hidden selection:bg-amber-500 selection:text-zinc-950">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5">
-          <Link href="/" className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-black text-zinc-950 shadow-lg shadow-amber-500/20">
-              B
-            </span>
-            <span>
-              Bar<span className="text-amber-500">OS</span>
-            </span>
-          </Link>
-          <nav className="hidden items-center gap-8 text-sm font-medium text-zinc-400 md:flex">
-            <a href="#prikaz" className="transition hover:text-white">Uživo prikaz</a>
-            <a href="#funkcije" className="transition hover:text-white">Funkcije</a>
-            <a href="#kako" className="transition hover:text-white">Kako radi</a>
-            <a href="#faq" className="transition hover:text-white">Pitanja</a>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+          <nav className="flex items-center gap-4 overflow-x-auto text-xs font-medium text-zinc-400 sm:gap-7 sm:text-sm">
+            <a href="#prikaz" className="whitespace-nowrap transition hover:text-white">Uživo prikaz</a>
+            <a href="#funkcije" className="whitespace-nowrap transition hover:text-white">Funkcije</a>
+            <a href="#kako" className="whitespace-nowrap transition hover:text-white">Kako radi</a>
+            <a href="#faq" className="whitespace-nowrap transition hover:text-white">Pitanja</a>
           </nav>
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-2.5">
             <a href="#kontakt" className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 hover:text-white sm:inline-flex">
               Zatraži demo
             </a>
