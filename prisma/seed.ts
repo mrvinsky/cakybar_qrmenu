@@ -72,6 +72,40 @@ async function main() {
     catMap[c.name] = rec.id;
   }
 
+  const supCount = await prisma.supplier.count({ where: { tenantId: caky.id } });
+  if (supCount === 0) {
+    const sup1 = await prisma.supplier.create({
+      data: {
+        tenantId: caky.id,
+        name: "Coca-Cola HBC",
+        contactPerson: "Nikola Jovanović",
+        phone: "+387 65 221 330",
+        email: "narudzbe@cchbc.com",
+        address: "Industrijska zona bb",
+        notes: "Isporuka utorkom i petkom do 11:00h",
+      },
+    });
+    const sup2 = await prisma.supplier.create({
+      data: {
+        tenantId: caky.id,
+        name: "Diskont Pića & Kafe Adria",
+        contactPerson: "Milan Petrović",
+        phone: "+387 66 882 119",
+        email: "info@adriadiskont.com",
+        address: "Bulevar oslobođenja 42",
+        notes: "Kafa, pivo i žestoka pića – rabat 5% na avans",
+      },
+    });
+    await prisma.product.updateMany({
+      where: { tenantId: caky.id, name: { contains: "Coca-Cola" } },
+      data: { supplierId: sup1.id },
+    });
+    await prisma.product.updateMany({
+      where: { tenantId: caky.id, supplierId: null },
+      data: { supplierId: sup2.id },
+    });
+  }
+
   const existingProducts = await prisma.product.count({ where: { tenantId: caky.id } });
   if (existingProducts === 0) {
     await prisma.product.createMany({
