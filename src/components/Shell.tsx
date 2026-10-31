@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logoutAction, stopImpersonation } from "@/app/actions/auth";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 import type { Session } from "@/lib/jwt";
 
 export type NavItem = { href: string; label: string };
@@ -29,9 +30,12 @@ export function Shell({
             </Link>
           ))}
         </nav>
-        <form action={logoutAction} className="p-4">
-          <button className="btn-ghost w-full">Odjava</button>
-        </form>
+        <div className="space-y-2 p-4">
+          <ChangePasswordModal />
+          <form action={logoutAction}>
+            <button className="btn-ghost w-full text-xs">Odjava</button>
+          </form>
+        </div>
       </aside>
       <main className="flex-1">
         {session.imp && (

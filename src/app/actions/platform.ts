@@ -124,3 +124,66 @@ export async function impersonate(tenantId: string) {
   await setSession({ uid: admin.id, role: "ADMIN", tid: tenantId, slug: admin.tenant.slug, name: admin.name, imp: s.uid });
   redirect(`/${admin.tenant.slug}/admin`);
 }
+
+/** Platform vlasnik dodaje novog korisnika (Admin ili Radnik) u objekat. */
+export async function platformCreateTenantUser(tenantId: string, fd: FormData) {
+  const s = await requirePlatform();
+  const name = String(fd.get("name") || "").trim();
+  const email = String(fd.get("email") || "").trim().toLowerCase();
+  const password = String(fd.get("password") || "");
+  const role = String(fd.get("role") || "RADNIK") === "ADMIN" ? "ADMIN" : "RADNIK";
+  if (!name || !email || password.length < 6) return;
+  if (await db.user.findUnique({ where: { email } })) return;
+
+  const u = await db.user.create({
+    data: {
+      tenantId,
+      name,
+      email,
+      passwordHash: await bcrypt.hash(password, 10),
+      role,
+    },
+  });
+  await audit({ tenantId, userId: s.uid, action: "PLATFORM_USER_CREATE", entity: "User", entityId: u.id, details: { name, email, role } });
+  revalidatePath(`/platform/tenants/${tenantId}`);
+}
+
+/** Platform vlasnik mijenja lozinku, ulogu ili status korisnika objekta. */
+export async function platformUpdateTenantUser(tenantId: string, userId: string, fd: FormData) {
+  const s = await requirePlatform();
+  const name = String(fd.get("name") || "").trim();
+  const email = String(fd.get("email") || "").trim().toLowerCase();
+  const role = String(fd.get("role") || "RADNIK") === "ADMIN" ? "ADMIN" : "RADNIK";
+  const newPassword = String(fd.get("newPassword") || "").trim();
+  const active = fd.get("active") !== "false";
+
+  if (!name || !email) return;
+  const dup = await db.user.findUnique({ where: { email } });
+  if (dup && dup.id !== userId) return;
+
+  await db.user.updateMany({
+    where: { id: userId, tenantId },
+    data: {
+      name,
+      email,
+      role,
+      active,
+      ...(newPassword.length >= 6 ? { passwordHash: await bcrypt.hash(newPassword, 10) } : {}),
+    },
+  });
+  await audit({ tenantId, userId: s.uid, action: "PLATFORM_USER_UPDATE", entity: "User", entityId: userId, details: { name, email, role, active } });
+  revalidatePath(`/platform/tenants/${tenantId}`);
+}
+
+/** Platform vlasnik briše korisnika objekta. */
+export async function platformDeleteTenantUser(tenantId: string, userId: string) {
+  const s = await requirePlatform();
+  await db.$transaction([
+    db.dailyRevenue.updateMany({ where: { userId }, data: { userId: null } }),
+    db.needReport.updateMany({ where: { userId }, data: { userId: null } }),
+    db.auditLog.updateMany({ where: { userId }, data: { userId: null } }),
+    db.user.deleteMany({ where: { id: userId, tenantId } }),
+  ]);
+  await audit({ tenantId, userId: s.uid, action: "PLATFORM_USER_DELETE", entity: "User", entityId: userId });
+  revalidatePath(`/platform/tenants/${tenantId}`);
+}

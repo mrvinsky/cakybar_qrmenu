@@ -49,3 +49,36 @@ export async function stopImpersonation() {
   await setSession({ uid: owner.id, role: "SUPER_ADMIN", tid: null, slug: null, name: owner.name });
   redirect("/platform/tenants");
 }
+
+/** Oturum açmış kullanıcının (Super Admin, Admin veya Radnik) kendi şifresini değiştirmesi. */
+export async function changeOwnPasswordAction(
+  currentPassword: string,
+  newPassword: string
+) {
+  const s = await getSession();
+  if (!s) return { error: "Niste prijavljeni." };
+  if (!newPassword || newPassword.length < 6) {
+    return { error: "Nova lozinka mora imati najmanje 6 znakova." };
+  }
+
+  const user = await db.user.findUnique({ where: { id: s.uid } });
+  if (!user) return { error: "Korisnik nije pronađen." };
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) return { error: "Trenutna lozinka nije tačna." };
+
+  await db.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10) },
+  });
+
+  await audit({
+    tenantId: user.tenantId,
+    userId: user.id,
+    action: "OWN_PASSWORD_CHANGE",
+    entity: "User",
+    entityId: user.id,
+  });
+
+  return { ok: true };
+}

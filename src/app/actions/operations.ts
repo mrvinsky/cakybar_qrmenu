@@ -79,9 +79,13 @@ export async function createStaffUserAction(slug: string, fd: FormData) {
   const password = String(fd.get("password") || "");
   const role = String(fd.get("role") || "RADNIK") === "ADMIN" ? "ADMIN" : "RADNIK";
 
-  if (!name || !email || password.length < 6) return;
+  if (!name || !email || password.length < 6) {
+    return { error: "Unesite ime, email i lozinku (min 6 znakova)." };
+  }
   const exists = await db.user.findUnique({ where: { email } });
-  if (exists) return;
+  if (exists) {
+    return { error: "Ovaj email se već koristi." };
+  }
 
   const user = await db.user.create({
     data: {
@@ -100,6 +104,95 @@ export async function createStaffUserAction(slug: string, fd: FormData) {
     entity: "User",
     entityId: user.id,
     details: { name, email, role },
+  });
+
+  revalidatePath(`/${slug}/admin/zaposleni`);
+  return { ok: true };
+}
+
+export async function updateStaffUserAction(slug: string, fd: FormData) {
+  const { session, tenant } = await requireTenant(slug, ["ADMIN"]);
+  const id = String(fd.get("id") || "").trim();
+  const name = String(fd.get("name") || "").trim();
+  const email = String(fd.get("email") || "").trim().toLowerCase();
+  const role = String(fd.get("role") || "RADNIK") === "ADMIN" ? "ADMIN" : "RADNIK";
+  const newPassword = String(fd.get("newPassword") || "").trim();
+
+  if (!id || !name || !email) {
+    return { error: "Ime i email su obavezni." };
+  }
+
+  const target = await db.user.findFirst({
+    where: { id, tenantId: tenant.id },
+  });
+  if (!target) return { error: "Zaposleni nije pronađen." };
+
+  const duplicate = await db.user.findUnique({ where: { email } });
+  if (duplicate && duplicate.id !== id) {
+    return { error: "Drugi korisnik već koristi ovaj email." };
+  }
+
+  const updateData: {
+    name: string;
+    email: string;
+    role: string;
+    passwordHash?: string;
+  } = {
+    name,
+    email,
+    // Admin ne može sam sebi oduzeti ADMIN ulogu
+    role: id === session.uid ? "ADMIN" : role,
+  };
+
+  if (newPassword.length > 0) {
+    if (newPassword.length < 6) {
+      return { error: "Nova lozinka mora imati najmanje 6 znakova." };
+    }
+    updateData.passwordHash = await bcrypt.hash(newPassword, 10);
+  }
+
+  await db.user.update({
+    where: { id },
+    data: updateData,
+  });
+
+  await audit({
+    tenantId: tenant.id,
+    userId: session.uid,
+    action: "USER_UPDATE",
+    entity: "User",
+    entityId: id,
+    details: { name, email, role: updateData.role, passwordChanged: newPassword.length > 0 },
+  });
+
+  revalidatePath(`/${slug}/admin/zaposleni`);
+  return { ok: true };
+}
+
+export async function deleteStaffUserAction(slug: string, userId: string) {
+  const { session, tenant } = await requireTenant(slug, ["ADMIN"]);
+  if (userId === session.uid) return; // Admin ne može obrisati samog sebe
+
+  const target = await db.user.findFirst({
+    where: { id: userId, tenantId: tenant.id },
+  });
+  if (!target) return;
+
+  // Odveži istoriju (pazar, prijave, audit) da se ne izgubi pri brisanju radnika
+  await db.$transaction([
+    db.dailyRevenue.updateMany({ where: { userId }, data: { userId: null } }),
+    db.needReport.updateMany({ where: { userId }, data: { userId: null } }),
+    db.auditLog.updateMany({ where: { userId }, data: { userId: null } }),
+    db.user.delete({ where: { id: userId } }),
+  ]);
+
+  await audit({
+    tenantId: tenant.id,
+    userId: session.uid,
+    action: "USER_DELETE",
+    entity: "User",
+    entityId: userId,
+    details: { deletedName: target.name, deletedEmail: target.email },
   });
 
   revalidatePath(`/${slug}/admin/zaposleni`);

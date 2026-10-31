@@ -1,7 +1,15 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Badge, Stat } from "@/components/Shell";
-import { addPayment, impersonate, setTenantStatus, updateTenantPlan } from "@/app/actions/platform";
+import {
+  addPayment,
+  impersonate,
+  platformCreateTenantUser,
+  platformDeleteTenantUser,
+  platformUpdateTenantUser,
+  setTenantStatus,
+  updateTenantPlan,
+} from "@/app/actions/platform";
 
 const d = (x?: Date | null) => (x ? x.toISOString().slice(0, 10) : "");
 
@@ -87,16 +95,66 @@ export default async function TenantDetail({ params }: { params: Promise<{ id: s
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-3 font-semibold">Korisnici</h2>
-          <ul className="divide-y divide-zinc-800 text-sm">
+        <div className="card space-y-4">
+          <h2 className="font-semibold">Korisnici objekta ({t.users.length})</h2>
+
+          {/* Novi korisnik objekta */}
+          <form
+            action={platformCreateTenantUser.bind(null, t.id)}
+            className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 sm:grid-cols-2"
+          >
+            <input name="name" required placeholder="Ime i prezime" className="input text-xs" />
+            <input name="email" type="email" required placeholder="Email" className="input text-xs" />
+            <input name="password" type="password" required minLength={6} placeholder="Lozinka (min 6)" className="input text-xs" />
+            <div className="flex gap-2">
+              <select name="role" defaultValue="RADNIK" className="input text-xs">
+                <option value="RADNIK">Konobar / Radnik</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+              <button className="btn whitespace-nowrap text-xs">+ Dodaj</button>
+            </div>
+          </form>
+
+          {/* Lista i uređivanje korisnika */}
+          <div className="space-y-2.5 text-sm">
             {t.users.map((u) => (
-              <li key={u.id} className="flex justify-between py-2">
-                <span>{u.name} <span className="text-zinc-500">· {u.email}</span></span>
-                <span className="flex gap-2"><Badge>{u.role}</Badge>{!u.active && <Badge tone="red">zamrznut</Badge>}</span>
-              </li>
+              <div key={u.id} className="rounded-xl border border-zinc-800/80 bg-zinc-950/50 p-3 space-y-2">
+                <form
+                  action={platformUpdateTenantUser.bind(null, t.id, u.id)}
+                  className="grid gap-2 sm:grid-cols-2"
+                >
+                  <input name="name" defaultValue={u.name} required className="input h-8 text-xs" />
+                  <input name="email" type="email" defaultValue={u.email} required className="input h-8 text-xs" />
+                  <select name="role" defaultValue={u.role} className="input h-8 text-xs">
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="RADNIK">RADNIK</option>
+                  </select>
+                  <select name="active" defaultValue={u.active ? "true" : "false"} className="input h-8 text-xs">
+                    <option value="true">Aktivan</option>
+                    <option value="false">Zamrznut</option>
+                  </select>
+                  <input
+                    name="newPassword"
+                    type="password"
+                    minLength={6}
+                    placeholder="Nova lozinka (opciono)"
+                    className="input h-8 text-xs"
+                  />
+                  <div className="flex gap-1.5">
+                    <button className="btn flex-1 text-xs">Sačuvaj</button>
+                  </div>
+                </form>
+                <form
+                  action={platformDeleteTenantUser.bind(null, t.id, u.id)}
+                  className="flex justify-end"
+                >
+                  <button className="text-xs text-red-400 hover:underline">
+                    🗑 Obriši korisnika
+                  </button>
+                </form>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
         <div className="card">
           <h2 className="mb-3 font-semibold">Istorija uplata</h2>
