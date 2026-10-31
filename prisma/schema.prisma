@@ -1,0 +1,310 @@
+// Multi-tenant SaaS shema. Svaki tenant-scoped model ima tenantId.
+// SQLite ne podržava enum -> koristimo String (vrijednosti su dokumentovane u komentarima).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== PLATFORMA ====================
+
+model Plan {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  priceMonthly Float    @default(0)
+  maxUsers     Int      @default(5)
+  maxTables    Int      @default(20)
+  features     String?  // slobodan opis / JSON
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  tenants      Tenant[]
+}
+
+model Tenant {
+  id                 String    @id @default(uuid())
+  slug               String    @unique // URL: /caky-bar/...
+  name               String
+  status             String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  qrMode             String    @default("TABLE_ORDERING") // MENU_ONLY | TABLE_ORDERING
+  planId             String?
+  subscriptionEndsAt DateTime?
+  paymentStatus      String    @default("TRIAL") // TRIAL | PAID | OVERDUE
+  contactEmail       String?
+  contactPhone       String?
+  address            String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  plan          Plan?          @relation(fields: [planId], references: [id])
+  payments      Payment[]
+  users         User[]
+  categories    Category[]
+  products      Product[]
+  suppliers     Supplier[]
+  tables        Table[]
+  orders        Order[]
+  stockCounts   StockCount[]
+  dailyRevenues DailyRevenue[]
+  needReports   NeedReport[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  purchases     Purchase[]
+}
+
+// Manuelno evidentirane uplate pretplate
+model Payment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  amount      Float
+  periodStart DateTime
+  periodEnd   DateTime
+  method      String?  // CASH | BANK | OTHER
+  note        String?
+  createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ==================== KORISNICI ====================
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String?  // null za SUPER_ADMIN
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   // SUPER_ADMIN | ADMIN | RADNIK
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant      Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  revenues    DailyRevenue[]
+  needReports NeedReport[]
+  auditLogs   AuditLog[]
+
+  @@index([tenantId])
+}
+
+// ==================== KATALOG ====================
+
+model Category {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products  Product[]
+
+  @@unique([tenantId, name])
+}
+
+model Supplier {
+  id            String    @id @default(uuid())
+  tenantId      String
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  notes         String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products      Product[]
+  purchases     Purchase[]
+
+  @@index([tenantId])
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  tenantId        String
+  categoryId      String?
+  supplierId      String?
+  name            String
+  unit            String   @default("kom") // kom | l | kg | boca ...
+  currentQuantity Float    @default(0)
+  minQuantity     Float    @default(0)
+  optimalQuantity Float    @default(0)
+  maxQuantity     Float    @default(0)
+  costPrice       Float    @default(0) // nabavna cijena
+  sellingPrice    Float    @default(0) // prodajna cijena (meni)
+  imageUrl        String?
+  description     String?
+  isAvailable     Boolean  @default(true) // vidljivo u QR meniju
+  active          Boolean  @default(true) // soft-delete
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category        Category?        @relation(fields: [categoryId], references: [id])
+  supplier        Supplier?        @relation(fields: [supplierId], references: [id])
+  orderItems      OrderItem[]
+  stockCountItems StockCountItem[]
+  needReports     NeedReport[]
+  purchaseItems   PurchaseItem[]
+
+  @@index([tenantId])
+}
+
+// ==================== STOLOVI I NARUDŽBE ====================
+
+model Table {
+  id       String  @id @default(uuid())
+  tenantId String
+  number   Int
+  name     String?
+  active   Boolean @default(true)
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  @@unique([tenantId, number])
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  tenantId    String
+  tableId     String
+  status      String      @default("PENDING") // PENDING | PREPARING | SERVED | PAID | CANCELLED
+  totalAmount Float       @default(0)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  table       Table       @relation(fields: [tableId], references: [id])
+  items       OrderItem[]
+
+  @@index([tenantId, status])
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int     @default(1)
+  unitPrice Float
+  subtotal  Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+// ==================== POPIS / NABAVKA ====================
+
+model StockCount {
+  id        String           @id @default(uuid())
+  tenantId  String
+  status    String           @default("OPEN") // OPEN | LOCKED
+  note      String?
+  createdAt DateTime         @default(now())
+  lockedAt  DateTime?
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items     StockCountItem[]
+
+  @@index([tenantId])
+}
+
+model StockCountItem {
+  id               String     @id @default(uuid())
+  stockCountId     String
+  productId        String
+  expectedQuantity Float      @default(0)
+  countedQuantity  Float
+  stockCount       StockCount @relation(fields: [stockCountId], references: [id], onDelete: Cascade)
+  product          Product    @relation(fields: [productId], references: [id])
+
+  @@unique([stockCountId, productId])
+}
+
+model Purchase {
+  id          String         @id @default(uuid())
+  tenantId    String
+  supplierId  String?
+  status      String         @default("DRAFT") // DRAFT | ORDERED | RECEIVED
+  invoiceNo   String?
+  totalAmount Float          @default(0)
+  createdAt   DateTime       @default(now())
+  receivedAt  DateTime?
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier    Supplier?      @relation(fields: [supplierId], references: [id])
+  items       PurchaseItem[]
+
+  @@index([tenantId])
+}
+
+model PurchaseItem {
+  id         String   @id @default(uuid())
+  purchaseId String
+  productId  String
+  quantity   Float
+  unitPrice  Float    @default(0)
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+// ==================== PAZAR / PRIJAVE / NOTIFIKACIJE ====================
+
+model DailyRevenue {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String?
+  date      DateTime
+  shift     String   @default("FIRST") // FIRST | SECOND
+  cash      Float    @default(0)
+  card      Float    @default(0)
+  total     Float    @default(0)
+  note      String?
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, date])
+}
+
+model NeedReport {
+  id        String   @id @default(uuid())
+  tenantId  String
+  productId String
+  userId    String?
+  level     String   // PRI_KRAJU | NEDOSTAJE | HITNO
+  note      String?
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, resolved])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  tenantId  String
+  type      String   // LOW_STOCK | NEW_REVENUE | POPIS_LOCKED | NEW_ORDER | NEED_REPORT
+  title     String
+  message   String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, read])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String?
+  userId     String?
+  action     String
+  entity     String?
+  entityId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
