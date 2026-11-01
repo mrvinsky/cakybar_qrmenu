@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#27272a" />
+      <stop offset="100%" stop-color="#09090b" />
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)" />
+  <rect x="20" y="20" width="472" height="472" rx="98" fill="none" stroke="url(#gold)" stroke-width="8" stroke-opacity="0.35" />
+  <!-- Particle dots constellation -->
+  <circle cx="148" cy="130" r="6" fill="#fbbf24" opacity="0.7" />
+  <circle cx="195" cy="108" r="8" fill="#f59e0b" opacity="0.9" />
+  <circle cx="256" cy="96" r="10" fill="#fbbf24" />
+  <circle cx="317" cy="108" r="8" fill="#f59e0b" opacity="0.9" />
+  <circle cx="364" cy="130" r="6" fill="#fbbf24" opacity="0.7" />
+  <circle cx="225" cy="144" r="5" fill="#fde68a" opacity="0.85" />
+  <circle cx="287" cy="144" r="5" fill="#fde68a" opacity="0.85" />
+  <!-- Espresso / Cocktail cup silhouette -->
+  <path d="M144 196h200v78c0 55.2-44.8 100-100 100s-100-44.8-100-100v-78z" fill="url(#gold)" />
+  <path d="M344 214h32c22.1 0 40 17.9 40 40s-17.9 40-40 40h-32v-24h32c8.8 0 16-7.2 16-16s-7.2-16-16-16h-32v-24z" fill="url(#gold)" />
+  <rect x="128" y="396" width="232" height="22" rx="11" fill="url(#gold)" opacity="0.9" />
+</svg>

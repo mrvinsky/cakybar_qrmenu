@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { triggerSystemNotification } from "@/components/PwaNotificationControls";
 
 type OrderItem = {
   id: string;
@@ -99,6 +100,11 @@ export function WorkerOrdersClient({
         if (data.type === "NEW_ORDER") {
           fetchOrders();
           if (soundEnabled) playOrderBell();
+          triggerSystemNotification(
+            `🔔 Nova narudžba · Sto ${data.tableNumber}`,
+            `Gost je poslao narudžbu sa stola ${data.tableNumber}. Dodirnite da pregledate.`,
+            `/${slug}/radnik/narudzbe`
+          );
           setAlertBanner(`🔔 Nova narudžba sa Stola ${data.tableNumber}!`);
           setTimeout(() => setAlertBanner(null), 5000);
         } else if (data.type === "STATUS_CHANGED") {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { logoutAction, stopImpersonation } from "@/app/actions/auth";
 import { ChangePasswordModal } from "./ChangePasswordModal";
+import { PwaNotificationControls } from "./PwaNotificationControls";
 import type { Session } from "@/lib/jwt";
 
 export type NavItem = { href: string; label: string };
@@ -31,6 +32,7 @@ export function Shell({
           ))}
         </nav>
         <div className="space-y-2 p-4">
+          <PwaNotificationControls />
           <ChangePasswordModal />
           <form action={logoutAction}>
             <button className="btn-ghost w-full text-xs">Odjava</button>
