@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/auth";
 import { Badge } from "@/components/Shell";
 import { addTableAction, toggleTableAction } from "@/app/actions/tables";
+import { TenantBrandingCard } from "./TenantBrandingCard";
 
 export default async function PodesavanjaStoloviPage({
   params,
@@ -44,6 +45,18 @@ export default async function PodesavanjaStoloviPage({
           Otvori javni QR meni ↗
         </Link>
       </div>
+
+      {/* Kafe Logosu ve İletişim Bilgileri (PDF Sipariş Fişleri İçin) */}
+      <TenantBrandingCard
+        slug={slug}
+        tenant={{
+          name: tenant.name,
+          logoUrl: tenant.logoUrl,
+          contactPhone: tenant.contactPhone,
+          contactEmail: tenant.contactEmail,
+          address: tenant.address,
+        }}
+      />
 
       {/* Ako je objekat u MENU_ONLY režimu, prikaži JEDAN glavni QR kod za štampu */}
       {!isTableOrdering && (

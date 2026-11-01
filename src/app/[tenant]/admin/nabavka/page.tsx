@@ -21,7 +21,7 @@ export default async function AdminNabavkaPage({
     db.supplier.findMany({
       where: { tenantId: tenant.id, active: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, phone: true, contactPerson: true, email: true, address: true },
     }),
     db.needReport.findMany({
       where: { tenantId: tenant.id, resolved: false },
@@ -42,6 +42,13 @@ export default async function AdminNabavkaPage({
   return (
     <NabavkaClient
       slug={slug}
+      tenantInfo={{
+        name: tenant.name,
+        logoUrl: tenant.logoUrl,
+        contactPhone: tenant.contactPhone,
+        contactEmail: tenant.contactEmail,
+        address: tenant.address,
+      }}
       products={products}
       suppliers={suppliers}
       openReports={openReports.map((r) => ({
@@ -59,6 +66,10 @@ export default async function AdminNabavkaPage({
         createdAt: p.createdAt.toISOString(),
         receivedAt: p.receivedAt ? p.receivedAt.toISOString() : null,
         supplierName: p.supplier?.name ?? "Bez dobavljača",
+        supplierPhone: p.supplier?.phone ?? null,
+        supplierContact: p.supplier?.contactPerson ?? null,
+        supplierEmail: p.supplier?.email ?? null,
+        supplierAddress: p.supplier?.address ?? null,
         items: p.items.map((it) => ({
           id: it.id,
           quantity: it.quantity,

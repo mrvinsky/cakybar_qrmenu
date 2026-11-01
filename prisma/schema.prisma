@@ -37,6 +37,7 @@ model Tenant {
   contactEmail       String?
   contactPhone       String?
   address            String?
+  logoUrl            String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

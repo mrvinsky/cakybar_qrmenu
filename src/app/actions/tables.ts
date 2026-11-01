@@ -42,3 +42,27 @@ export async function toggleTableAction(slug: string, tableId: string, active: b
   });
   revalidatePath(`/${slug}/admin/podesavanja`);
 }
+
+export async function updateTenantBrandingAction(slug: string, fd: FormData) {
+  const { session, tenant } = await requireTenant(slug, ["ADMIN"]);
+  const logoUrl = String(fd.get("logoUrl") || "").trim() || null;
+  const contactPhone = String(fd.get("contactPhone") || "").trim() || null;
+  const contactEmail = String(fd.get("contactEmail") || "").trim() || null;
+  const address = String(fd.get("address") || "").trim() || null;
+
+  await db.tenant.update({
+    where: { id: tenant.id },
+    data: { logoUrl, contactPhone, contactEmail, address },
+  });
+
+  await audit({
+    tenantId: tenant.id,
+    userId: session.uid,
+    action: "TENANT_BRANDING_UPDATE",
+    entity: "Tenant",
+    entityId: tenant.id,
+  });
+
+  revalidatePath(`/${slug}/admin/podesavanja`);
+  revalidatePath(`/${slug}/admin/nabavka`);
+}
