@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const hash = await bcrypt.hash("admin123", 10);
+  const hash = await bcrypt.hash("E+m.c2+enerji", 10);
 
   const basic = await prisma.plan.upsert({
     where: { name: "Basic" },
@@ -18,9 +18,9 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "owner@platform.com" },
-    update: {},
-    create: { email: "owner@platform.com", name: "Platform Owner", passwordHash: hash, role: "SUPER_ADMIN" },
+    where: { email: "besiralkya@gmail.com" },
+    update: { passwordHash: hash },
+    create: { email: "besiralkya@gmail.com", name: "Bešir Alkaya", passwordHash: hash, role: "SUPER_ADMIN" },
   });
 
   const caky = await prisma.tenant.upsert({
