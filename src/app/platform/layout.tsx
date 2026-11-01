@@ -1,5 +1,6 @@
 import { Shell } from "@/components/Shell";
 import { requirePlatform } from "@/lib/auth";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const nav = [
   { href: "/platform", label: "Pregled" },
@@ -11,8 +12,10 @@ const nav = [
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const s = await requirePlatform();
   return (
-    <Shell title="BarOS Platforma" nav={nav} session={s}>
-      {children}
-    </Shell>
+    <LanguageProvider>
+      <Shell title="BarOS Platforma" nav={nav} session={s}>
+        {children}
+      </Shell>
+    </LanguageProvider>
   );
 }
