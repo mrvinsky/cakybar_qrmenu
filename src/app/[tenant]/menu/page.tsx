@@ -18,20 +18,43 @@ export default async function TenantQrMenuPage({
   const tenant = await db.tenant.findUnique({ where: { slug } });
   if (!tenant || tenant.status !== "ACTIVE") notFound();
 
-  const [categories, products, tables] = await Promise.all([
+  const [categories, rawProducts, tables] = await Promise.all([
     db.category.findMany({
       where: { tenantId: tenant.id, active: true },
+      select: { id: true, name: true },
       orderBy: { sortOrder: "asc" },
     }),
     db.product.findMany({
       where: { tenantId: tenant.id, active: true, sellingPrice: { gt: 0 } },
+      select: {
+        id: true,
+        categoryId: true,
+        name: true,
+        description: true,
+        sellingPrice: true,
+        imageUrl: true,
+        isAvailable: true,
+        currentQuantity: true,
+      },
       orderBy: { name: "asc" },
     }),
     db.table.findMany({
       where: { tenantId: tenant.id, active: true },
+      select: { id: true, number: true, name: true },
       orderBy: { number: "asc" },
     }),
   ]);
+
+  // Ne šaljemo tačnu količinu zaliha ni nabavnu cijenu klijentu
+  const products = rawProducts.map((p) => ({
+    id: p.id,
+    categoryId: p.categoryId,
+    name: p.name,
+    description: p.description,
+    sellingPrice: p.sellingPrice,
+    imageUrl: p.imageUrl,
+    isAvailable: p.isAvailable && p.currentQuantity > 0,
+  }));
 
   return (
     <QrMenuClient

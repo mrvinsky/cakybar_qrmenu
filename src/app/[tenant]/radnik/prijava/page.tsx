@@ -17,11 +17,14 @@ export default async function WorkerPrijavaPage({
     db.product.findMany({
       where: { tenantId: tenant.id, active: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, unit: true, currentQuantity: true },
+      select: { id: true, name: true, unit: true },
     }),
     db.needReport.findMany({
       where: { tenantId: tenant.id, resolved: false },
-      include: { product: true, user: true },
+      include: {
+        product: { select: { id: true, name: true, unit: true } },
+        user: { select: { id: true, name: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
   ]);

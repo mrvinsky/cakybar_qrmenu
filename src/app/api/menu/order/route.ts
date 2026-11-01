@@ -73,8 +73,12 @@ export async function POST(req: Request) {
         items: { create: orderItemsData },
       },
       include: {
-        table: true,
-        items: { include: { product: true } },
+        table: { select: { id: true, number: true, name: true } },
+        items: {
+          include: {
+            product: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
@@ -114,7 +118,14 @@ export async function GET(req: Request) {
   if (!orderId) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   const order = await db.order.findUnique({
     where: { id: orderId },
-    include: { table: true, items: { include: { product: true } } },
+    include: {
+      table: { select: { id: true, number: true, name: true } },
+      items: {
+        include: {
+          product: { select: { id: true, name: true } },
+        },
+      },
+    },
   });
   if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ order });

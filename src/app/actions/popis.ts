@@ -29,7 +29,7 @@ export async function openStockCountAction(slug: string, fd: FormData) {
         create: products.map((p) => ({
           productId: p.id,
           expectedQuantity: p.currentQuantity,
-          countedQuantity: p.currentQuantity,
+          countedQuantity: 0,
         })),
       },
     },

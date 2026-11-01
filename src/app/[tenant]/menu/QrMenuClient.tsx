@@ -11,7 +11,6 @@ type Product = {
   sellingPrice: number;
   imageUrl: string | null;
   isAvailable: boolean;
-  currentQuantity: number;
 };
 type TableItem = { id: string; number: number; name: string | null };
 
@@ -230,7 +229,7 @@ export function QrMenuClient({
         {/* Ürün Kartları */}
         <div className="grid gap-3 sm:grid-cols-2">
           {visibleProducts.map((p) => {
-            const available = p.isAvailable && p.currentQuantity > 0;
+            const available = p.isAvailable;
             const qty = cart[p.id] ?? 0;
 
             return (

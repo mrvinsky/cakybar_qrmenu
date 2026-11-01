@@ -27,7 +27,6 @@ type Product = {
   name: string;
   sellingPrice: number;
   isAvailable: boolean;
-  currentQuantity: number;
 };
 
 // Web Audio API ile gerçek sipariş zili ("DING-DONG!")

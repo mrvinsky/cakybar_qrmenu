@@ -18,8 +18,12 @@ export async function GET(req: Request) {
       status: { in: ["PENDING", "PREPARING", "SERVED"] },
     },
     include: {
-      table: true,
-      items: { include: { product: true } },
+      table: { select: { id: true, number: true, name: true } },
+      items: {
+        include: {
+          product: { select: { id: true, name: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -56,7 +60,14 @@ export async function PATCH(req: Request) {
   const updated = await db.order.update({
     where: { id: orderId },
     data: { status },
-    include: { table: true, items: { include: { product: true } } },
+    include: {
+      table: { select: { id: true, number: true, name: true } },
+      items: {
+        include: {
+          product: { select: { id: true, name: true } },
+        },
+      },
+    },
   });
 
   await audit({
