@@ -15,7 +15,6 @@ export default async function AdminLayout({ children, params }: { children: Reac
     { href: `${b}/izvestaji`, label: "Izvještaji" },
     { href: `${b}/zaposleni`, label: "Zaposleni" },
     { href: `${b}/podesavanja`, label: "Podešavanja / Stolovi" },
-    { href: `${b}/audit`, label: "Audit log" },
     { href: `/${slug}/radnik/narudzbe`, label: "Narudžbe uživo" },
   ];
   return (
